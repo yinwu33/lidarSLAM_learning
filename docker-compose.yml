@@ -1,0 +1,12 @@
+version: "3.0"
+services:
+  noetic:
+    build: 
+      context: docker
+      dockerfile: Dockerfile
+      network: host
+    container_name: docker_ros_vnc_noetic_container
+    volumes:
+      - $PWD/workspace:/root/workspace
+    ports:
+      - 6080:80
