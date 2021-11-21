@@ -16,10 +16,12 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     # version control 
     git \
     # editor
-    vim 
+    vim \
+    # development
+    libopencv-dev libeigen3-dev 
 
 # ------ set up ROS ------
-COPY ros_install.sh /root/init/
+COPY packages/ros_install.sh /root/init/
 RUN chmod +x /root/init/ros_install.sh && /root/init/ros_install.sh
 
 EXPOSE 6080
