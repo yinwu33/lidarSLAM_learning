@@ -13,3 +13,7 @@ _deps
 *.zip
 HW1/
 HW2/
+
+build/
+devel/
+.vscode/c_cpp_properties.json
