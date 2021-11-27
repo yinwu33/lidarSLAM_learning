@@ -10,11 +10,12 @@ apt-get update
 apt-get install -y ros-$ROS_DISTRO-desktop-full
 
 # environment
-echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> ~/.bashrc
-source ~/.bashrc
+echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> /home/ubuntu/.bashrc
+source /home/ubuntu/.bashrc
 
 apt-get install -y python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential
 
 # rosdep
+su ubuntu
 rosdep init
 rosdep update

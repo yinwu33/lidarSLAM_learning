@@ -53,10 +53,9 @@ Eigen::Matrix3d OdomCalib::Solve()
     Eigen::Matrix3d correct_matrix;
 
     //TODO: 求解线性最小二乘
-    std::cout << "A: " << A.rows() << "x" << A.cols() << " b: " << b.rows() << std::endl;
     Eigen::Matrix<double, 9, 1> x;
     x = A.colPivHouseholderQr().solve(b);
-    // x = A.ldlt().solve(b);  //! ldlt only for square matrix
+    // x = A.ldlt().solve(b);  //! ldlt only pos, neg  semi-definite
     correct_matrix << x[0], x[1], x[2],
                       x[3], x[4], x[5],
                       x[6], x[7], x[8];
