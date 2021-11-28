@@ -25,15 +25,14 @@ vim是文档编辑器，可以在命令行运行。是vi的拓展版，可以装
 
 如截图
 
-![image](./turtulesim.png)
+![image](./docs/turtulesim.png)
 
 ## Task3
 
-见相应pdf
-见相应pdf
+见pdf [here](./docs/Task3.pdf)
 
 ## Task4
 
 见代码
 
-![task4](./task4.png)
+![task4](./docs/task4.png)
