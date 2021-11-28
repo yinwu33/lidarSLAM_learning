@@ -1,6 +1,6 @@
 # lidarSLAM_learning
 
-This is a repository of learning 2d lidar slam based on `ShenLanXueYuan`.
+This is a repository of learning 2d lidar slam based on `ShenLanXueYuan`. Only tasks are included in the repo. When you are interesting in the original resources, you can access [ShenLanXueYuan](https://www.shenlanxueyuan.com/)
 
 # Quick Start
 
