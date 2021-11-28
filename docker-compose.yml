@@ -1,12 +1,14 @@
 version: "3.0"
 services:
-  noetic:
+  kinetic:
     build: 
       context: docker
       dockerfile: Dockerfile
       network: host
-    container_name: docker_ros_vnc_noetic_container
+    container_name: ros_vnc
+    image: ros_vnc:kinetic
     volumes:
-      - $PWD/workspace:/root/workspace
+      - $PWD/workspace:/home/ubuntu/workspace
     ports:
-      - 6080:80
+      - 40080:80
+      - 45901:5901
