@@ -18,3 +18,5 @@ HW2/
 build/
 devel/
 .vscode/c_cpp_properties.json
+
+docs/
