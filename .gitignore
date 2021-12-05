@@ -14,6 +14,7 @@ _deps
 *.zip
 HW1/
 HW2/
+HW3/
 
 build/
 devel/
