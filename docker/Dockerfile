@@ -1,5 +1,5 @@
 FROM dorowu/ubuntu-desktop-lxde-vnc:xenial
-LABEL maintainer="Tiryoh<tiryoh@gmail.com>"
+LABEL maintainer="YinWu<yinwu.life@gmail.com>"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -22,10 +22,13 @@ RUN useradd --create-home --home-dir /home/ubuntu --shell /bin/bash --user-group
     echo ubuntu:ubuntu | chpasswd && \
     echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# ------ set up ROS ------
-COPY ros_install.sh /home/ubuntu/init/
-RUN chmod +x /home/ubuntu/init/ros_install.sh && /home/ubuntu/init/ros_install.sh
 ENV USER ubuntu
+# ------ set up ROS ------
+COPY packages/ros_install.sh /home/ubuntu/init/
+RUN chmod +x /home/ubuntu/init/ros_install.sh && /home/ubuntu/init/ros_install.sh
+
+COPY packages/libnabo_install.sh /home/ubuntu/init/
+RUN chmod +x /home/ubuntu/init/libnabo_install.sh && /home/ubuntu/init/libnabo_install.sh
 
 # ------ for lidar slam lesson ------
 RUN apt install -y ros-kinetic-csm ros-kinetic-nav-core

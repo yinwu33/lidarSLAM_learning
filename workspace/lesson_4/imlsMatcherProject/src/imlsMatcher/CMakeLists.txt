@@ -86,6 +86,7 @@ target_link_libraries(imlsMatcher_node
    ${catkin_LIBRARIES}
    ${EXTERNAL_LIBS}
    /opt/ros/kinetic/lib/libcsm.so
+   libnabo::nabo
 )
 
 #############
