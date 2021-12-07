@@ -12,9 +12,8 @@ _deps
 
 *.bag
 *.zip
-HW1/
-HW2/
-HW3/
+
+HW*/
 
 build/
 devel/
