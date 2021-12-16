@@ -15,7 +15,7 @@
 
 //pcl::visualization::CloudViewer g_cloudViewer("cloud_viewer");
 //此处bag包的地址需要自行修改
-std::string bagfile = "/home/shenlan/imlsMatcherProject/src/bag/imls_icp.bag";
+std::string bagfile = "/home/ubuntu/workspace/lesson_4/imlsMatcherProject/src/bag/imls_icp.bag";
 
 class imlsDebug
 {
@@ -176,6 +176,7 @@ public:
     ros::Subscriber m_laserscanSub;
     ros::Publisher m_imlsPathPub;
     ros::Publisher m_odomPathPub;
+
 };
 
 

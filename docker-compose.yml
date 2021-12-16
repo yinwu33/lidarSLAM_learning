@@ -1,14 +1,14 @@
-version: "3.0"
+version: "3.4"
 services:
   kinetic:
     build: 
       context: docker
       dockerfile: Dockerfile
       network: host
-    container_name: ros_vnc
-    image: ros_vnc:kinetic
+    container_name: lidar_slam
+    image: lidar_slam:kinetic
     volumes:
-      - $PWD/workspace:/home/ubuntu/workspace
+      - ./workspace:/home/ubuntu/workspace
     ports:
       - 40080:80
       - 45901:5901

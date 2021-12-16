@@ -11,7 +11,7 @@ RUN apt-get update -q && \
     # dependencies
     apt-utils sudo lsb-release locales bash-completion tzdata gosu \
     # network
-    wget curl net-tools \
+    wget curl net-tools openssh-server\
     # development
     git build-essential vim  pkg-config \
     # c++

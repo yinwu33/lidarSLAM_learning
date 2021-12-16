@@ -83,6 +83,14 @@ add_executable(imlsMatcher_node  src/main.cpp src/imls_icp.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(imlsMatcher_node
+${catkin_LIBRARIES}
+${EXTERNAL_LIBS}
+/opt/ros/kinetic/lib/libcsm.so
+libnabo::nabo
+)
+
+add_executable(imlsMatcher_csm_node  src/main_csm.cpp)
+target_link_libraries(imlsMatcher_csm_node
    ${catkin_LIBRARIES}
    ${EXTERNAL_LIBS}
    /opt/ros/kinetic/lib/libcsm.so
