@@ -4,12 +4,14 @@
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
 
+#include "timer.hpp"
+
 
 //for visual
 void PublishGraphForVisulization(ros::Publisher* pub,
-                                 std::vector<Eigen::Vector3d>& Vertexs,
-                                 std::vector<Edge>& Edges,
-                                 int color = 0)
+    std::vector<Eigen::Vector3d>& Vertexs,
+    std::vector<Edge>& Edges,
+    int color = 0)
 {
     visualization_msgs::MarkerArray marray;
 
@@ -27,7 +29,7 @@ void PublishGraphForVisulization(ros::Publisher* pub,
     m.scale.y = 0.1;
     m.scale.z = 0.1;
 
-    if(color == 0)
+    if (color == 0)
     {
         m.color.r = 1.0;
         m.color.g = 0.0;
@@ -55,7 +57,7 @@ void PublishGraphForVisulization(ros::Publisher* pub,
     edge.scale.y = 0.1;
     edge.scale.z = 0.1;
 
-    if(color == 0)
+    if (color == 0)
     {
         edge.color.r = 0.0;
         edge.color.g = 0.0;
@@ -73,7 +75,7 @@ void PublishGraphForVisulization(ros::Publisher* pub,
     uint id = 0;
 
     //加入节点
-    for (uint i=0; i<Vertexs.size(); i++)
+    for (uint i = 0; i < Vertexs.size(); i++)
     {
         m.id = id;
         m.pose.position.x = Vertexs[i](0);
@@ -83,7 +85,7 @@ void PublishGraphForVisulization(ros::Publisher* pub,
     }
 
     //加入边
-    for(int i = 0; i < Edges.size();i++)
+    for (int i = 0; i < Edges.size();i++)
     {
         Edge tmpEdge = Edges[i];
         edge.points.clear();
@@ -108,70 +110,102 @@ void PublishGraphForVisulization(ros::Publisher* pub,
 
 
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
+    Timer timer;
+    double t = .0;
     ros::init(argc, argv, "ls_slam");
 
     ros::NodeHandle nodeHandle;
 
     // beforeGraph
-    ros::Publisher beforeGraphPub,afterGraphPub;
-    beforeGraphPub = nodeHandle.advertise<visualization_msgs::MarkerArray>("beforePoseGraph",1,true);
-    afterGraphPub  = nodeHandle.advertise<visualization_msgs::MarkerArray>("afterPoseGraph",1,true);
+    ros::Publisher beforeGraphPub, afterGraphPub;
+    beforeGraphPub = nodeHandle.advertise<visualization_msgs::MarkerArray>("beforePoseGraph", 1, true);
+    afterGraphPub = nodeHandle.advertise<visualization_msgs::MarkerArray>("afterPoseGraph", 1, true);
 
+    // std::string fileName = "intel";
+    // std::string fileName = "killian";
+    std::string fileName = "test_quadrat";
+    std::string VertexPath = "/home/ubuntu/workspace/lesson_6/LSSLAMProject/src/ls_slam/data/" + fileName + "-v.dat";
+    std::string EdgePath = "/home/ubuntu/workspace/lesson_6/LSSLAMProject/src/ls_slam/data/" + fileName + "-e.dat";
 
-    std::string VertexPath = "/home/eventec/LSSLAMProject/src/ls_slam/data/test_quadrat-v.dat";
-    std::string EdgePath = "/home/eventec/LSSLAMProject/src/ls_slam/data/test_quadrat-e.dat";
-
-//    std::string VertexPath = "/home/eventec/LSSLAMProject/src/ls_slam/data/intel-v.dat";
-//    std::string EdgePath = "/home/eventec/LSSLAMProject/src/ls_slam/data/intel-e.dat";
+    //    std::string VertexPath = "/home/eventec/LSSLAMProject/src/ls_slam/data/intel-v.dat";
+    //    std::string EdgePath = "/home/eventec/LSSLAMProject/src/ls_slam/data/intel-e.dat";
 
     std::vector<Eigen::Vector3d> Vertexs;
     std::vector<Edge> Edges;
 
-    ReadVertexInformation(VertexPath,Vertexs);
-    ReadEdgesInformation(EdgePath,Edges);
+    timer.Start();
+    ReadVertexInformation(VertexPath, Vertexs);
+    ReadEdgesInformation(EdgePath, Edges);
+    double t_read = timer.Stop();
 
     PublishGraphForVisulization(&beforeGraphPub,
-                                Vertexs,
-                                Edges);
+        Vertexs,
+        Edges);
 
-    double initError = ComputeError(Vertexs,Edges);
-    std::cout <<"initError:"<<initError<<std::endl;
+    double initError = ComputeError(Vertexs, Edges);
+    std::cout << "initError:" << initError << std::endl;
 
     int maxIteration = 100;
     double epsilon = 1e-4;
+    double lastError = -1;
 
-    for(int i = 0; i < maxIteration;i++)
+    double t_solve = .0;
+    double t_update = .0;
+
+    for (int i = 0; i < maxIteration;i++)
     {
-        std::cout <<"Iterations:"<<i<<std::endl;
-        Eigen::VectorXd dx = LinearizeAndSolve(Vertexs,Edges);
+        std::cout << "======Iterations:" << i << "======" << std::endl;
+        timer.Start();
+        Eigen::VectorXd dx = LinearizeAndSolve(Vertexs, Edges);
+        t = timer.Stop();
+        t_solve += t;
+        std::cout << "Duration for optimazation: " << t << std::endl;
 
         //进行更新
         //TODO--Start
+        timer.Start();
+        for (int j = 0; j < Vertexs.size(); ++j) {
+            Vertexs[j] += dx.block<3, 1>(j * 3, 0);
+        }
+        t = timer.Stop();
+        t_update += t;
+        std::cout << "Duration for update: " << t << std::endl;
+
         //TODO--End
 
         double maxError = -1;
-        for(int k = 0; k < 3 * Vertexs.size();k++)
+        for (int k = 0; k < 3 * Vertexs.size();k++)
         {
-            if(maxError < std::fabs(dx(k)))
+            if (maxError < std::fabs(dx(k)))
             {
                 maxError = std::fabs(dx(k));
             }
         }
-
-        if(maxError < epsilon)
+        if (maxError > lastError) {
+            std::cout << "! Error increase:, current error: " << maxError << std::endl;
+            lastError = maxError;
+        }
+        if (maxError < epsilon)
             break;
     }
 
 
-    double finalError  = ComputeError(Vertexs,Edges);
+    double finalError = ComputeError(Vertexs, Edges);
 
-    std::cout <<"FinalError:"<<finalError<<std::endl;
+    std::cout << "========================\nFinalError:" << finalError << std::endl;
+
+    t_solve /= maxIteration;
+    t_update /= maxIteration;
+
+    std::cout << "Duration for reading: " << t_read << std::endl;
+    std::cout << "Average Optimazation Time: " << t_solve << std::endl;
+    std::cout << "Average Update Time: " << t_update << std::endl;
 
     PublishGraphForVisulization(&afterGraphPub,
-                                Vertexs,
-                                Edges,1);
+        Vertexs,
+        Edges, 1);
 
     ros::spin();
 
