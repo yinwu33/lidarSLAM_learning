@@ -6,23 +6,17 @@
 
 typedef struct edge
 {
-  int xi,xj;
+  int xi, xj;
   Eigen::Vector3d measurement;
   Eigen::Matrix3d infoMatrix;
 }Edge;
 
 
 Eigen::VectorXd  LinearizeAndSolve(std::vector<Eigen::Vector3d>& Vertexs,
-                                   std::vector<Edge>& Edges);
+  std::vector<Edge>& Edges, int method = 0);
 
 double ComputeError(std::vector<Eigen::Vector3d>& Vertexs,
-                    std::vector<Edge>& Edges);
-
-
-
-
-
-
+  std::vector<Edge>& Edges);
 
 
 #endif

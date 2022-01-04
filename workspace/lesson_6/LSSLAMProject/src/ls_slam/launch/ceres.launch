@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="ls_slam" type="ceres_ls_slam" name="ceres_ls_slam" output="screen">
+    <!-- <param name="fileName" value="intel"/> -->
+    <param name="fileName" value="killian"/>  
+    <!-- <param name="fileName" value="test_quadrat"/> -->
+
+    <param name="method" value="1"/>
+  </node>
+</launch>

@@ -86,7 +86,8 @@ void CalcJacobianAndError(Eigen::Vector3d xi, Eigen::Vector3d xj, Eigen::Vector3
     Eigen::Vector2d tj = xj.block(0, 0, 2, 1);
     Eigen::Vector2d tij = z.block(0, 0, 2, 1);
 
-    ei = TransToPose(Z * (Xi.inverse() * Xj));
+    ei = TransToPose(Z.inverse() * (Xi.inverse() * Xj));
+
 
     Eigen::Matrix2d dRi_dtheta_T;
     double cos_theta = Ri(0, 0);
@@ -111,7 +112,7 @@ void CalcJacobianAndError(Eigen::Vector3d xi, Eigen::Vector3d xj, Eigen::Vector3
  * @return          位姿的增量
  */
 Eigen::VectorXd  LinearizeAndSolve(std::vector<Eigen::Vector3d>& Vertexs,
-    std::vector<Edge>& Edges)
+    std::vector<Edge>& Edges, int method)
 {
     //申请内存
     Eigen::MatrixXd H(Vertexs.size() * 3, Vertexs.size() * 3);
@@ -139,6 +140,9 @@ Eigen::VectorXd  LinearizeAndSolve(std::vector<Eigen::Vector3d>& Vertexs,
         Eigen::Vector3d ei;
         Eigen::Matrix3d Ai;
         Eigen::Matrix3d Bi;
+        ei.setZero();
+        Ai.setZero();
+        Bi.setZero();
         CalcJacobianAndError(xi, xj, z, ei, Ai, Bi);
 
         //TODO--Start
@@ -146,8 +150,11 @@ Eigen::VectorXd  LinearizeAndSolve(std::vector<Eigen::Vector3d>& Vertexs,
         Eigen::Matrix3d Hij = Ai.transpose() * tmpEdge.infoMatrix * Bi;
         Eigen::Matrix3d Hjj = Bi.transpose() * tmpEdge.infoMatrix * Bi;
 
-        Eigen::Vector3d bi = Ai.transpose() * tmpEdge.infoMatrix * ei;
-        Eigen::Vector3d bj = Bi.transpose() * tmpEdge.infoMatrix * ei;
+        // Eigen::Vector3d bi = Ai.transpose() * tmpEdge.infoMatrix * ei;
+        // Eigen::Vector3d bj = Bi.transpose() * tmpEdge.infoMatrix * ei;
+
+        Eigen::Vector3d bi = (ei.transpose() * tmpEdge.infoMatrix * Ai).transpose();
+        Eigen::Vector3d bj = (ei.transpose() * tmpEdge.infoMatrix * Bi).transpose();
 
         H.block<3, 3>(tmpEdge.xi * 3, tmpEdge.xi * 3) += Hii;
         H.block<3, 3>(tmpEdge.xi * 3, tmpEdge.xj * 3) += Hij;
@@ -165,19 +172,29 @@ Eigen::VectorXd  LinearizeAndSolve(std::vector<Eigen::Vector3d>& Vertexs,
     //TODO--Start
     dx.resize(Vertexs.size() * 3);
 
-    // * method 1 inverse
-    dx =  -H.inverse() * b;
-
+    // * method 0 inverse
+    if (method == 0)
+        dx = -H.inverse() * b;
+    // * method 1
+    else if (method == 1)
+        dx = -H.colPivHouseholderQr().solve(b);
     // * method 2 cholesky
-    // dx = H.ldlt().solve(-b);
-
+    else if (method == 2)
+        dx = -H.ldlt().solve(b);
     // * method 3
-    // Eigen::SparseMatrix<double> H_sparse = H.sparseView();
-    // Eigen::SimplicialCholesky<Eigen::SparseMatrix<double>> solver(H_sparse);
-    // dx = solver.solve(-b);
+    else if (method == 3) {
+        Eigen::SparseMatrix<double> H_sparse = H.sparseView();
+        Eigen::SimplicialCholesky<Eigen::SparseMatrix<double>> solver(H_sparse);
+        dx = -solver.solve(b);
+    }
 
     // * method 4
     //TODO-End
+    else if (method == 4) {
+        Eigen::SparseMatrix<double> H_sparse = H.sparseView();
+        Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver(H_sparse);
+        dx = -solver.solve(b);
+    }
 
     return dx;
 }

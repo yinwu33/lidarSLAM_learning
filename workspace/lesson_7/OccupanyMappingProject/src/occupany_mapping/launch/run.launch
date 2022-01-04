@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="occupany_mapping" type="occupany_mapping" name="occupany_mapping" output="screen">
+    <param name="method" value="3"/>
+    
+  </node>
+</launch>

@@ -109,14 +109,16 @@ void PublishGraphForVisulization(ros::Publisher* pub,
 
 
 
-
 int main(int argc, char** argv)
 {
     Timer timer;
     double t = .0;
     ros::init(argc, argv, "ls_slam");
 
-    ros::NodeHandle nodeHandle;
+    ros::NodeHandle nodeHandle, nh_private("~");
+
+    std::string fileName = nh_private.param<std::string>("fileName", "test_quadrat");
+    int method = nh_private.param<int>("method", 0);
 
     // beforeGraph
     ros::Publisher beforeGraphPub, afterGraphPub;
@@ -125,7 +127,6 @@ int main(int argc, char** argv)
 
     // std::string fileName = "intel";
     // std::string fileName = "killian";
-    std::string fileName = "test_quadrat";
     std::string VertexPath = "/home/ubuntu/workspace/lesson_6/LSSLAMProject/src/ls_slam/data/" + fileName + "-v.dat";
     std::string EdgePath = "/home/ubuntu/workspace/lesson_6/LSSLAMProject/src/ls_slam/data/" + fileName + "-e.dat";
 
@@ -153,12 +154,14 @@ int main(int argc, char** argv)
 
     double t_solve = .0;
     double t_update = .0;
+    int count = 0;
 
     for (int i = 0; i < maxIteration;i++)
     {
-        std::cout << "======Iterations:" << i << "======" << std::endl;
+        count++;
+        std::cout << "\n======Iterations:" << i << "======" << std::endl;
         timer.Start();
-        Eigen::VectorXd dx = LinearizeAndSolve(Vertexs, Edges);
+        Eigen::VectorXd dx = LinearizeAndSolve(Vertexs, Edges, method);
         t = timer.Stop();
         t_solve += t;
         std::cout << "Duration for optimazation: " << t << std::endl;
@@ -168,6 +171,7 @@ int main(int argc, char** argv)
         timer.Start();
         for (int j = 0; j < Vertexs.size(); ++j) {
             Vertexs[j] += dx.block<3, 1>(j * 3, 0);
+            Vertexs[j][2];
         }
         t = timer.Stop();
         t_update += t;
@@ -183,25 +187,29 @@ int main(int argc, char** argv)
                 maxError = std::fabs(dx(k));
             }
         }
+        std::cout << "Current Error: " << maxError << std::endl;
         if (maxError > lastError) {
-            std::cout << "! Error increase:, current error: " << maxError << std::endl;
+            std::cout << "!!! Error increase " << std::endl;
             lastError = maxError;
         }
-        if (maxError < epsilon)
+        if (maxError < epsilon) {
+            std::cout << "max < epsilon" << std::endl;
             break;
+        }
     }
 
 
     double finalError = ComputeError(Vertexs, Edges);
 
-    std::cout << "========================\nFinalError:" << finalError << std::endl;
+    std::cout << "\n\n--------------------------------\nFinalError:" << finalError << std::endl;
 
-    t_solve /= maxIteration;
-    t_update /= maxIteration;
+    t_solve /= count;
+    t_update /= count;
 
-    std::cout << "Duration for reading: " << t_read << std::endl;
+    // std::cout << "Duration for reading: " << t_read << std::endl;
     std::cout << "Average Optimazation Time: " << t_solve << std::endl;
-    std::cout << "Average Update Time: " << t_update << std::endl;
+    std::cout << "Iterations: " << count << std::endl;
+    // std::cout << "Average Update Time: " << t_update << std::endl;
 
     PublishGraphForVisulization(&afterGraphPub,
         Vertexs,

@@ -16,7 +16,11 @@ RUN apt-get update -q && \
     git build-essential vim  pkg-config \
     # c++
     gcc g++ cmake && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/*\
+    # ceres
+    libceres-dev\
+    # for g2o
+    libsuitesparse-dev qtdeclarative5-dev qt5-qmake libqglviewer-dev-qt4
 
 RUN useradd --create-home --home-dir /home/ubuntu --shell /bin/bash --user-group --groups adm,sudo ubuntu && \
     echo ubuntu:ubuntu | chpasswd && \

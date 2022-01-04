@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Eigen3 REQUIRED)
 
+find_package(Ceres REQUIRED)
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -120,7 +122,7 @@ catkin_package(
 include_directories(
   include
   include/ls_slam
-  ${catkin_INCLUDE_DIRS}  ${EIGEN_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}  ${EIGEN_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -140,6 +142,9 @@ include_directories(
 
 add_executable(ls_slam src/main.cpp src/readfile.cpp src/gaussian_newton.cpp)
 target_link_libraries(ls_slam ${catkin_LIBRARIES} ${CSPARSE_LIBRARY} )
+
+add_executable(ceres_ls_slam src/main_ceres.cpp src/readfile.cpp src/gaussian_newton.cpp)
+target_link_libraries(ceres_ls_slam ${catkin_LIBRARIES} ${CSPARSE_LIBRARY} ${CERES_LIBRARIES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
