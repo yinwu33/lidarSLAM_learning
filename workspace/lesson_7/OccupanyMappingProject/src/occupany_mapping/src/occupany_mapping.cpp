@@ -191,14 +191,14 @@ void OccupanyMapping(std::vector<GeneralLaserScan>& scans, std::vector<Eigen::Ve
             double world_y = sin(theta) * laser_x + cos(theta) * laser_y + robotPose(1);
 
             //TODO 对对应的map的cell信息进行更新．（1,2,3题内容）
-            GridIndex grid_x_y = ConvertWorld2GridIndex(world_x, world_y);
+            GridIndex grid_index = ConvertWorld2GridIndex(world_x, world_y);
 
-            if (isValidGridIndex(grid_x_y) == false)
+            if (!isValidGridIndex(grid_index))
                 continue;
 
-            GridIndex robotPose_grid = ConvertWorld2GridIndex(robotPose[0], robotPose[1]);
+            GridIndex robotPose_grid_index = ConvertWorld2GridIndex(robotPose[0], robotPose[1]);
 
-            std::vector<GridIndex> miss_grids = TraceLine(robotPose_grid.x, robotPose_grid.y, grid_x_y.x, grid_x_y.y);
+            std::vector<GridIndex> miss_grids = TraceLine(robotPose_grid_index.x, robotPose_grid_index.y, grid_index.x, grid_index.y);
 
             // method 1
             if (method == 1) {
@@ -206,13 +206,15 @@ void OccupanyMapping(std::vector<GeneralLaserScan>& scans, std::vector<Eigen::Ve
                     GridIndex tmpIndex = miss_grids[j];
                     int linear_index = GridIndexToLinearIndex(tmpIndex);
                     pMap[linear_index] += mapParams.log_free;
-                    pMap[linear_index] = std::max(mapParams.log_min, double(pMap[linear_index]));
+                    pMap[linear_index] = (pMap[linear_index] < mapParams.log_min ? mapParams.log_min : pMap[linear_index]);
+                    // pMap[linear_index] = std::max(mapParams.log_min, double(pMap[linear_index]));
                 }
 
                 //更新被击中的点
-                int linear_index = GridIndexToLinearIndex(grid_x_y);
+                int linear_index = GridIndexToLinearIndex(grid_index);
                 pMap[linear_index] += mapParams.log_occ;
-                pMap[linear_index] = std::min(mapParams.log_max, double(pMap[linear_index]));
+                pMap[linear_index] = (pMap[linear_index] > mapParams.log_max ? mapParams.log_max : pMap[linear_index]);
+                // pMap[linear_index] = std::min(mapParams.log_max, double(pMap[linear_index]));
             }
 
             // method2
@@ -225,18 +227,16 @@ void OccupanyMapping(std::vector<GeneralLaserScan>& scans, std::vector<Eigen::Ve
                 }
 
                 //更新被击中的点
-                int linear_index = GridIndexToLinearIndex(grid_x_y);
+                int linear_index = GridIndexToLinearIndex(grid_index);
                 pMapHits[linear_index]++;
             }
 
             // * method 3
             if (method == 3) {
-                // tsdf 截断距离
-                double cut_off_dis = 2 * mapParams.resolution;
-                double far_dis;
+                double t = 2 * mapParams.resolution;  // cut off distance
 
-                // 计算远点
-                far_dis = dist + 3 * cut_off_dis;
+                // calculate far point
+                double far_dis = dist + 3 * mapParams.resolution;
 
                 double far_laser_x = far_dis * cos(angle);
                 double far_laser_y = far_dis * sin(angle);
@@ -244,53 +244,44 @@ void OccupanyMapping(std::vector<GeneralLaserScan>& scans, std::vector<Eigen::Ve
                 double far_world_x = cos(theta) * far_laser_x - sin(theta) * far_laser_y + robotPose(0);
                 double far_world_y = sin(theta) * far_laser_x + cos(theta) * far_laser_y + robotPose(1);
 
-                GridIndex far_grid_x_y = ConvertWorld2GridIndex(far_world_x, far_world_y);
+                GridIndex far_grid_index = ConvertWorld2GridIndex(far_world_x, far_world_y);
 
                 std::vector<GridIndex> near_grids;
-                // 如果增加的距离是远点超出地图范围，那么就是用激光点作为远点
-                if (isValidGridIndex(far_grid_x_y) == false) {
-                    near_grids = TraceLine(robotPose_grid.x, robotPose_grid.y, grid_x_y.x, grid_x_y.y);
+
+                if (isValidGridIndex(far_grid_index) == false) {
+                    near_grids = TraceLine(robotPose_grid_index.x, robotPose_grid_index.y, grid_index.x, grid_index.y);
                 }
                 else {
-                    near_grids = TraceLine(robotPose_grid.x, robotPose_grid.y, far_grid_x_y.x, far_grid_x_y.y);
+                    near_grids = TraceLine(robotPose_grid_index.x, robotPose_grid_index.y, far_grid_index.x, far_grid_index.y);
                 }
 
-                // 更新laser_dist附近的栅格
                 for (size_t j = 0; j < near_grids.size(); j++) {
                     GridIndex tmpIndex = near_grids[j];
-                    double grid_dis = sqrt(pow(tmpIndex.x - robotPose_grid.x, 2) + pow(tmpIndex.y - robotPose_grid.y, 2));
+                    double grid_dis = sqrt(pow(tmpIndex.x - robotPose_grid_index.x, 2) + pow(tmpIndex.y - robotPose_grid_index.y, 2));
 
-                    // 从gridmap尺度转化为实际地图尺度
                     grid_dis *= mapParams.resolution;
 
-                    // 计算tsdf
-                    double tsdf = std::max(-1.0, std::min(1.0, (dist - grid_dis) / cut_off_dis));
+                    double tsdf = std::max(-1.0, std::min(1.0, (dist - grid_dis) / t));
 
                     int linearIndex = GridIndexToLinearIndex(tmpIndex);
 
-                    // 更新TSDF
                     pMapTSDF[linearIndex] = (pMapW[linearIndex] * pMapTSDF[linearIndex] + tsdf) / (pMapW[linearIndex] + 1);
                     pMapW[linearIndex] += 1;
-                    // cout << "sdf: " << dist - grid_dis << endl;
-                    // cout << "tsdf:     " << tsdf << endl;
-                    // cout << "grid_dis: " << grid_dis << endl;
                 }
-                // cout << "laser_dis: " << dist << endl;
-                // cout << "----------" << endl;
             }
             //end of TODO
         }
     }
     //TODO 通过计数建图算法或TSDF算法对栅格进行更新（2,3题内容）
+    static double ratio_threshold = 0.3;
     if (method == 2) {
-        for (int i = 0; i < mapParams.width * mapParams.height; i++) {
-            if (pMapHits[i] + pMapMisses[i] == 0) {
+        for (int i = 0; i < mapParams.width * mapParams.height; ++i) {
+            int sum = pMapHits[i] + pMapMisses[i];
+            if (sum == 0) {
                 pMap[i] = 50;
                 continue;
             }
-
-            double ratio = pMapHits[i] * 1.0 / (pMapHits[i] + pMapMisses[i]);
-            double ratio_threshold = 0.3;
+            double ratio = double(pMapHits[i]) / sum;
 
             if (ratio > ratio_threshold) {
                 pMap[i] = 100;
@@ -302,47 +293,29 @@ void OccupanyMapping(std::vector<GeneralLaserScan>& scans, std::vector<Eigen::Ve
     }
 
     if (method == 3) {
-        // BFS查找边界
-        int* pMapIsAccessed = new int[mapParams.width * mapParams.height];
-        std::vector<std::pair<int, int>> directions = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
-        std::queue<GridIndex> q;
-        GridIndex tmp_grid = GridIndex();
-        tmp_grid.x = 0;
-        tmp_grid.y = 0;
-        q.push(tmp_grid);
-
-        while (!q.empty()) {
-            int size = q.size();
-            for (size_t i = 0; i < size; i++) {
-                GridIndex node = q.front();
-                q.pop();
-                for (size_t k = 0; k < 4; k++) {
-                    std::pair<int, int> dir = directions[k];
-                    int tmpx = node.x + dir.first;
-                    int tmpy = node.y + dir.second;
-                    int linearIndex = tmpy + tmpx * mapParams.width;
-                    int centerIndex = node.y + node.x * mapParams.width;
-
-                    if (tmpx >= 0 && tmpx < mapParams.height && tmpy >= 0 && tmpy < mapParams.width && pMapIsAccessed[linearIndex] == 0) {
-                        // 对于边界点的处理
-                        if (pMapTSDF[linearIndex] * pMapTSDF[centerIndex] < 0) {
-                            // 选择pMapTSDF绝对值较小的一个栅格，认为是障碍物所在的栅格
-                            if (abs(pMapTSDF[linearIndex]) < abs(pMapTSDF[centerIndex])) {
-                                pMap[linearIndex] = 100;
+        std::vector<std::pair<int, int>> boundaries{ {0, 1}, {0, -1}, {-1, 0}, {1, 0} };
+        for (int i = 0; i < mapParams.width; ++i) {
+            for (int j = 0; j < mapParams.height; ++j) {
+                GridIndex centerIndex;
+                centerIndex.SetIndex(i, j);
+                int center_linearIndex = GridIndexToLinearIndex(centerIndex);
+                for (auto& boundary : boundaries) {
+                    GridIndex boundaryIndex;
+                    boundaryIndex.SetIndex(i + boundary.first, j + boundary.second);
+                    if (isValidGridIndex(boundaryIndex)) {
+                        int boundary_linearIndex = GridIndexToLinearIndex(boundaryIndex);
+                        if (pMapTSDF[center_linearIndex] * pMapTSDF[boundary_linearIndex] < 0) {
+                            if (abs(pMapTSDF[center_linearIndex] < abs(pMapTSDF[boundary_linearIndex]))) {
+                                pMap[center_linearIndex] = 100;
                             }
                             else {
-                                pMap[centerIndex] = 100;
+                                pMap[boundary_linearIndex] = 100;
                             }
                         }
-                        // 访问过的点不再进行访问
-                        pMapIsAccessed[linearIndex] = 1;
-                        tmp_grid.x = tmpx;
-                        tmp_grid.y = tmpy;
-                        q.push(tmp_grid);
                     }
                 }
-            }
 
+            }
         }
     }
     //end of TODO
